@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineBot 🎬 - Recomendações de Filmes e Séries</title>
+    <style>
+        :root {
+            --primary: #C41E3A;
+            --secondary: #9B001C;
+            --light: #fbfbfb;
+            --text: #333333;
+            --shadow-visible: 0 15px 45px rgba(0, 0, 0, 0.4); 
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #c5c5c5 0%, #929292 100%); 
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .container {
+            width: 85%;
+            max-width: 500px; 
+            height: 80vh;
+            min-height: 550px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            border-radius: 25px; 
+            box-shadow: var(--shadow-visible); 
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 25px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            border-top-left-radius: 25px; 
+            border-top-right-radius: 25px;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px;
+            background: var(--light);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.4s ease-out;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            word-wrap: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bot-message {
+            background: white;
+            border-top-left-radius: 5px;
+            align-self: flex-start;
+            color: var(--text);
+            border: 1px solid #e9e9e9;
+        }
+
+        .user-message {
+            background: var(--primary); 
+            color: white;
+            border-bottom-right-radius: 5px;
+            align-self: flex-end;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-top: 5px;
+            text-align: right;
+            display: block;
+        }
+
+        .suggestions {
+            display: none;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 15px 25px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #user-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+
+        #user-input:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.15);
+        }
+
+        #send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(196, 30, 58, 0.4);
+            font-size: 1.2rem;
+        }
+
+        #send-btn:hover {
+            transform: scale(1.05);
+            background: var(--secondary);
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+            background-color: white;
+            padding: 12px 18px;
+            border-radius: 18px;
+            border-top-left-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid #eee;
+            align-self: flex-start;
+        }
+        .typing-dots { display: flex; gap: 6px; }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        .menu {
+            display: none; 
+        }
+
+        .api-key-container {
+            display: none;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 0;
+            }
+            .container {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .header {
+                border-radius: 0;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .chat-container {
+                padding: 15px;
+            }
+            .message {
+                max-width: 95%;
+            }
+            .input-container {
+                padding: 12px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 CineBot</h1>
+            <p>Seu Guia de Streaming - Encontre seu próximo filme ou série!</p>
+            <div class="status">
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <div class="message bot-message">
+                <strong>🎬 Olá! Eu sou a CineBot! 🍿</strong>
+                <br><br>
+                Sou uma IA especializada em te dar as melhores indicações de <strong>Filmes e Séries</strong>, de todos os gêneros e plataformas de streaming. Posso te ajudar a decidir o que assistir agora!
+                <br><br>
+                🌟 <strong>Posso te ajudar com:</strong>
+                <br>
+                • Recomendações personalizadas por humor ou gênero 🎭
+                <br>
+                • Sugestões do que está em alta no momento 🔥
+                <br>
+                • Detalhes e curiosidades sobre atores, diretores e tramas 📝
+                <br>
+                • Listas dos melhores em qualquer plataforma 📺
+                <br>
+                • E muito mais sobre o mundo do entretenimento!
+                <div class="message-time">Agora</div>
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="O que vamos assistir hoje? 🍿" autocomplete="off">
+            <button id="send-btn">
+                <span>▶️</span>
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        let GEMINI_API_KEY = ''; 
+        let usingAPI = false;
+
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const statusDiv = document.querySelector('.status');
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.classList.add('message-time');
+            timeDiv.textContent = getCurrentTime();
+            
+            messageDiv.innerHTML = message.replace(/\n/g, '<br>');
+            messageDiv.appendChild(timeDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.classList.add('typing-indicator');
+            typingDiv.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return typingDiv;
+        }
+
+        function generateLocalResponse(input) {
+            input = input.toLowerCase().trim();
+
+            if (input.match(/^(oi|olá|ola|hey|e aí|ei|hello|hi|como vai|tudo bem)/)) {
+                return `🎬 <strong>Oi! Que ótimo te ver por aqui!</strong> 🍿<br><br>
+                Sou a CineBot, sua guia de streaming! Estou pronta para te dar o roteiro perfeito para hoje.<br><br>
+                <strong>Que tal me dizer:</strong><br>
+                • Seu gênero favorito? (Ex: Ação, Romance) 💥<br>
+                • Seu humor atual? (Ex: Quero rir, quero susto) 😂<br>
+                • Qual plataforma de streaming você tem? (Ex: Netflix, Max) 📺<br><br>
+                <em>Estou no aguardo do seu pedido!</em> 🎥`;
+            }
+
+            if (input.includes('terror') || input.includes('susto') || input.includes('horror')) {
+                return `😱 <strong>Ótima escolha para quem gosta de adrenalina!</strong> 👻<br><br>
+                Para um bom terror, você precisa de algo que mexa com a cabeça e com o estômago. Minha sugestão, que está sempre em alta, é **Hereditário** (disponível em algumas plataformas de aluguel/compra) ou a série **A Maldição da Residência Hill** (Netflix).<br><br>
+                **Por que assistir:** Ambos constroem o medo de forma psicológica, focando em traumas familiares e mistérios assustadores.<br><br>
+                Me diga se já viu algum desses ou se prefere um terror mais clássico!`;
+            }
+            
+            if (input.includes('ação') || input.includes('eletrizante') || input.includes('tiro')) {
+                return `💥 <strong>Ação é o que não falta!</strong> 🚀<br><br>
+                Para uma sessão eletrizante, recomendo a trilogia **John Wick** (se você busca coreografias de luta incríveis) ou o clássico moderno **Mad Max: Estrada da Fúria** (se busca caos visual).<br><br>
+                **Plataformas:** Verifique a disponibilidade, mas geralmente estão em Prime Video ou HBO Max.<br><br>
+                Qual desses te parece um bom início de noite?`;
+            }
+
+            return `🤔 <strong>Que interessante!</strong><br><br>
+            Com base na sua busca sobre "${input}", parece que você procura algo com **uma narrativa envolvente** e **personagens marcantes**.<br><br>
+            Tente refinar sua busca com termos como: **"Comédia romântica no Netflix"** ou **"Filme de época no Prime Video"**. Assim, eu consigo te dar uma sugestão mais precisa! ✨`;
+        }
+
+        async function processUserInput() {
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+
+            addMessage(userMessage, true);
+            userInput.value = '';
+
+            const typingIndicator = showTypingIndicator();
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1500)); 
+                
+                const response = generateLocalResponse(userMessage);
+                
+                typingIndicator.remove();
+                addMessage(response);
+                
+            } catch (error) {
+                typingIndicator.remove();
+                statusDiv.innerHTML = '⚠️ Erro Interno';
+                addMessage('Ops! Tive um pequeno erro interno. Tente perguntar de forma mais simples, como "Filme de comédia".');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            sendBtn.addEventListener('click', processUserInput);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    processUserInput();
+                }
+            });
+
+            userInput.focus();
+        });
+    </script>
+</body>
+</html>
